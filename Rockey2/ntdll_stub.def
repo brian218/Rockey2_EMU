@@ -1,0 +1,4 @@
+LIBRARY NTDLL.dll
+EXPORTS
+    memset
+    _snprintf

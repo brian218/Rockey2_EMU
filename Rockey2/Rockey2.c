@@ -57,7 +57,7 @@ static void OpenRegDongleKey(int handle)
     char regKeyPath[MAX_PATH] = { 0 };
     if (!Dongles[handle].regKey)
     {
-        sprintf_s(regKeyPath, sizeof regKeyPath, "%s\\Dongle%02d", RegSubKey, handle);
+        _snprintf(regKeyPath, sizeof regKeyPath - 1, "%s\\Dongle%02d", RegSubKey, handle);
         if (RegCreateKeyEx(RegRootKey, regKeyPath, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &Dongles[handle].regKey, NULL) != ERROR_SUCCESS &&
             RegOpenKeyEx(RegRootKey, regKeyPath, 0, KEY_READ, &Dongles[handle].regKey) != ERROR_SUCCESS)
             Dongles[handle].regKey = NULL;
@@ -68,8 +68,8 @@ static BOOL ReadRegBlockValue(int handle, int block_index, char* buffer512)
 {
     if (!Dongles[handle].regKey)
         return FALSE;
-    char regName[6 + 1]; // Block0 + '\0'
-    sprintf_s(regName, sizeof regName, RegBlockName, block_index);
+    char regName[6 + 1] = { 0 }; // Block0 + '\0'
+    _snprintf(regName, sizeof regName - 1, RegBlockName, block_index);
     DWORD regType = REG_BINARY;
     DWORD regSize = 512;
     LSTATUS regStatus = RegQueryValueEx(Dongles[handle].regKey, regName, NULL, &regType, (LPBYTE)buffer512, &regSize);
@@ -80,8 +80,8 @@ static BOOL WriteRegBlockValue(int handle, int block_index, const char* buffer51
 {
     if (!Dongles[handle].regKey)
         return FALSE;
-    char regName[6 + 1]; // Block0 + '\0'
-    sprintf_s(regName, sizeof regName, RegBlockName, block_index);
+    char regName[6 + 1] = { 0 }; // Block0 + '\0'
+    _snprintf(regName, sizeof regName - 1, RegBlockName, block_index);
     DWORD regType = REG_BINARY;
     DWORD regSize = 512;
     LSTATUS regStatus = RegSetValueEx(Dongles[handle].regKey, regName, 0, regType, (const LPBYTE)buffer512, regSize);
@@ -186,7 +186,7 @@ int WINAPI RY2_Open(int mode, DWORD uid, DWORD* hid)
             if (!Dongles[i].mutex)
             {
                 char mutexName[15 + 1] = { 0 }; // ROCKEY2_MUTEX00 + '\0'
-                sprintf_s(mutexName, sizeof mutexName, "ROCKEY2_MUTEX%02d", i);
+                _snprintf(mutexName, sizeof mutexName - 1, "ROCKEY2_MUTEX%02d", i);
                 Dongles[i].mutex = CreateMutex(NULL, FALSE, mutexName);
             }
             if (Dongles[i].regKey && Dongles[i].mutex)
