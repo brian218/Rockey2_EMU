@@ -39,7 +39,7 @@ static void ReadRegDongleCountValue()
         DWORD regType = REG_DWORD;
         DWORD regSize = sizeof(DWORD);
         LSTATUS regStatus = RegQueryValueEx(regKey, RegValueName, NULL, &regType, (LPBYTE)&DongleCount, &regSize);
-        if (!(regStatus == ERROR_SUCCESS && regType == REG_DWORD && regSize == sizeof(DWORD)) || DongleCount > 100)
+        if (!(regStatus == ERROR_SUCCESS && regType == REG_DWORD && regSize == sizeof(DWORD)) || DongleCount < 0 || DongleCount > 100)
         {
             DongleCount = 0;
             regType = REG_DWORD;
@@ -54,7 +54,7 @@ static void ReadRegDongleCountValue()
 
 static void OpenRegDongleKey(int handle)
 {
-    char regKeyPath[MAX_PATH] = { 0 };
+    char regKeyPath[33 + 1] = { 0 }; // Software\Rockey2\Dongles\Dongle00 + '\0'
     if (!Dongles[handle].regKey)
     {
         _snprintf(regKeyPath, sizeof regKeyPath - 1, "%s\\Dongle%02d", RegSubKey, handle);
