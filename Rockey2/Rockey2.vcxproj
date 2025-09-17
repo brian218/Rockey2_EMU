@@ -24,6 +24,8 @@
     <ProjectGuid>{9d634485-e963-442a-8a85-325181f70b05}</ProjectGuid>
     <RootNamespace>Rockey2</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <IntDir>$(ProjectDir)$(Configuration)\$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\</OutDir>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -139,10 +141,12 @@ echo ntdll_stub.lib generated successfully in $(IntDir)</Command>
       <EntryPointSymbol>DllMain</EntryPointSymbol>
       <AdditionalDependencies>$(IntDir)ntdll_stub.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>Rockey2.def</ModuleDefinitionFile>
+      <AdditionalOptions>/NOEXP /NOIMPLIB %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <ClCompile>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <SDLCheck>false</SDLCheck>
+      <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>

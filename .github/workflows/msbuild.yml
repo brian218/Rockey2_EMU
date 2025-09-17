@@ -1,0 +1,44 @@
+name: MSBuild
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  SOLUTION_NAME: Rockey2
+  BUILD_CONFIGURATION: Release
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        platform: [x86, x64]
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1.0.2
+
+    - name: Build for ${{env.BUILD_CONFIGURATION}} - ${{matrix.platform}}
+      run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:Platform=${{matrix.platform}} ${{env.SOLUTION_NAME}}.sln
+
+    - name: Set Platform Output Directory Name
+      run: |
+        if ("${{matrix.platform}}" -eq "x86") {
+          echo "OUTPUT_DIR_NAME=Win32" >> $env:GITHUB_ENV
+        } else {
+          echo "OUTPUT_DIR_NAME=${{matrix.platform}}" >> $env:GITHUB_ENV
+        }
+      shell: pwsh
+
+    - name: Upload DLL Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{env.BUILD_CONFIGURATION}}_${{matrix.platform}}
+        path: ${{env.BUILD_CONFIGURATION}}\${{env.OUTPUT_DIR_NAME}}\${{env.SOLUTION_NAME}}.dll
