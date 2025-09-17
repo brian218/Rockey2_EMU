@@ -33,8 +33,8 @@ static void ReadRegDongleCountValue()
 {
     const char* RegValueName = "Count";
     HKEY regKey = NULL;
-    if ((RegCreateKeyEx(RegRootKey, RegSubKey, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &regKey, NULL) == ERROR_SUCCESS ||
-        RegOpenKeyEx(RegRootKey, RegSubKey, 0, KEY_READ, &regKey) == ERROR_SUCCESS) && regKey)
+    if ((RegCreateKeyEx(RegRootKey, RegSubKey, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WOW64_64KEY | KEY_READ | KEY_WRITE, NULL, &regKey, NULL) == ERROR_SUCCESS ||
+        RegOpenKeyEx(RegRootKey, RegSubKey, 0, KEY_WOW64_64KEY | KEY_READ, &regKey) == ERROR_SUCCESS) && regKey)
     {
         DWORD regType = REG_DWORD;
         DWORD regSize = sizeof(DWORD);
@@ -58,8 +58,8 @@ static void OpenRegDongleKey(int handle)
     if (!Dongles[handle].regKey)
     {
         _snprintf(regKeyPath, sizeof regKeyPath - 1, "%s\\Dongle%02d", RegSubKey, handle);
-        if (RegCreateKeyEx(RegRootKey, regKeyPath, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, NULL, &Dongles[handle].regKey, NULL) != ERROR_SUCCESS &&
-            RegOpenKeyEx(RegRootKey, regKeyPath, 0, KEY_READ, &Dongles[handle].regKey) != ERROR_SUCCESS)
+        if (RegCreateKeyEx(RegRootKey, regKeyPath, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WOW64_64KEY | KEY_READ | KEY_WRITE, NULL, &Dongles[handle].regKey, NULL) != ERROR_SUCCESS &&
+            RegOpenKeyEx(RegRootKey, regKeyPath, 0, KEY_WOW64_64KEY | KEY_READ, &Dongles[handle].regKey) != ERROR_SUCCESS)
             Dongles[handle].regKey = NULL;
     }
 }

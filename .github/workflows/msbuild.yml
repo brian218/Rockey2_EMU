@@ -41,4 +41,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ${{env.BUILD_CONFIGURATION}}_${{matrix.platform}}
-        path: ${{env.BUILD_CONFIGURATION}}\${{env.OUTPUT_DIR_NAME}}\${{env.SOLUTION_NAME}}.dll
+        path: bin\${{env.BUILD_CONFIGURATION}}\${{env.OUTPUT_DIR_NAME}}\${{env.SOLUTION_NAME}}.dll
