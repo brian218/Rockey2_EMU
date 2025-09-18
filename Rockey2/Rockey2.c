@@ -28,6 +28,7 @@ static const char* RegBlockName = "Block%d";
 static const char* const RegInfoNames[] = { "HID", "UID", "Version", "Protection" };
 static RY2_Dongle* Dongles = NULL;
 static int DongleCount = 0;
+static HANDLE ProcessHeap = NULL;
 
 static void ReadRegDongleCountValue()
 {
@@ -149,7 +150,7 @@ static void Cleanup()
     {
         for (int i = 0; i < DongleCount; i++)
             CloseDongle(i);
-        HeapFree(GetProcessHeap(), 0, Dongles);
+        HeapFree(ProcessHeap, 0, Dongles);
         Dongles = NULL;
     }
     DongleCount = 0;
@@ -161,7 +162,7 @@ int WINAPI RY2_Find()
     ReadRegDongleCountValue();
     if (DongleCount > 0)
     {
-        Dongles = (RY2_Dongle*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, DongleCount * sizeof(RY2_Dongle));
+        Dongles = (RY2_Dongle*)HeapAlloc(ProcessHeap, HEAP_ZERO_MEMORY, DongleCount * sizeof(RY2_Dongle));
         if (!Dongles)
             DongleCount = 0;
     }
@@ -271,6 +272,13 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH:
+    {
+        ProcessHeap = GetProcessHeap();
+        if (!ProcessHeap)
+            return FALSE;
+        DisableThreadLibraryCalls(hModule);
+        break;
+    }
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
         break;
