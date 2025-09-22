@@ -30,7 +30,7 @@ static RY2_Dongle* Dongles = NULL;
 static int DongleCount = 0;
 static HANDLE ProcessHeap = NULL;
 
-static void ReadRegDongleCountValue()
+static void ReadRegDongleCountValue(void)
 {
     const char* RegValueName = "Count";
     HKEY regKey = NULL;
@@ -144,7 +144,7 @@ static void CloseDongle(int handle)
     }
 }
 
-static void Cleanup()
+static void Cleanup(void)
 {
     if (Dongles)
     {
