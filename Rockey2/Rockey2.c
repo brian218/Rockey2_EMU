@@ -1,7 +1,7 @@
 ﻿/*
  * This file is part of the Rockey2 EMU project authored by Brian218.
  * 
- * Copyright (C) 2025 Brian218 (https://github.com/brian218)
+ * Copyright (C) 2026 Brian218 (https://github.com/brian218)
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <windows.h>
 #include "Rockey2.h"
+#include "crypto.h"
 
 static const HKEY RegRootKey = HKEY_CURRENT_USER;
 static const char* RegSubKey = "Software\\Rockey2\\Dongles";
@@ -130,6 +131,14 @@ static BOOL WriteRegInfoValue(int handle)
     return success;
 }
 
+static void EraseDongleBlocks(int handle)
+{
+    char buffer[512];
+    memset(buffer, 0xFF, sizeof buffer);
+    for (int i = 0; i < 5; i++)
+        WriteRegBlockValue(handle, i, buffer);
+}
+
 static void CloseDongle(int handle)
 {
     if (Dongles[handle].regKey)
@@ -218,7 +227,10 @@ int WINAPI RY2_GenUID(int handle, DWORD* uid, char* seed, int isProtect)
     if (!Dongles[handle].regKey || !Dongles[handle].mutex)
         return RY2ERR_NOT_OPENED_DEVICE;
     WaitForSingleObject(Dongles[handle].mutex, INFINITE);
+    EraseDongleBlocks(handle);
+    Dongles[handle].uid = GenUID(seed);
     Dongles[handle].isProtected = isProtect;
+    WriteRegInfoValue(handle);
     *uid = Dongles[handle].uid;
     ReleaseMutex(Dongles[handle].mutex);
     return RY2ERR_SUCCESS;
@@ -234,7 +246,7 @@ int WINAPI RY2_Read(int handle, int block_index, char* buffer512)
         return RY2ERR_NOT_OPENED_DEVICE;
     WaitForSingleObject(Dongles[handle].mutex, INFINITE);
     if (!ReadRegBlockValue(handle, block_index, buffer512))
-        memset(buffer512, 0, 512);
+        memset(buffer512, 0xFF, 512);
     ReleaseMutex(Dongles[handle].mutex);
     return RY2ERR_SUCCESS;
 }

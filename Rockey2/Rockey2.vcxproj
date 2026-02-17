@@ -150,9 +150,11 @@ echo ntdll_stub.lib generated successfully in $(IntDir)</Command>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\crypto.h" />
     <ClInclude Include="include\Rockey2.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="crypto.c" />
     <ClCompile Include="Rockey2.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
