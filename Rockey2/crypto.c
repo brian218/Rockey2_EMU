@@ -21,64 +21,85 @@
 #include <string.h>
 #include "crypto.h"
 
-static const uint32_t G[64] = {
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-    1, 6, 11, 0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12,
-    5, 8, 11, 14, 1, 4, 7, 10, 13, 0, 3, 6, 9, 12, 15, 2,
-    0, 7, 14, 5, 12, 3, 10, 1, 8, 15, 6, 13, 4, 11, 2, 9
-};
-
-static const uint32_t S[64] = {
-    7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,
-    5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,
-    4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23,
-    6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21
-};
-
-static const uint32_t T[64] = {
-    0xD76AA478, 0xE8C7B756, 0x242070DB, 0xC1BDCEEE,
-    0xF57C0FAF, 0x4787C62A, 0xA8304613, 0xFD469501,
-    0x698098D8, 0x8B44F7AF, 0xFFFF5BB1, 0x895CD7BE,
-    0x6B901122, 0xFD987193, 0xA679438E, 0x49B40821,
-    0xF61E2562, 0xC040B340, 0x265E5A51, 0xE9B6C7AA,
-    0xD62F105D, 0x02441453, 0xD8A1E681, 0xE7D3FBC8,
-    0x21E1CDE6, 0xC33707D6, 0xF4D50D87, 0x455A14ED,
-    0xA9E3E905, 0xFCEFA3F8, 0x676F02D9, 0x8D2A4C8A,
-    0xFFFA3942, 0x8771F681, 0x6D9D6122, 0xFDE5380C,
-    0xA4BEEA44, 0x4BDECFA9, 0xF6BB4B60, 0xBEBFBC70,
-    0x289B7EC6, 0xEAA127FA, 0xD4EF3085, 0x04881D05,
-    0xD9D4D039, 0xE6DB99E5, 0x1FA27CF8, 0xC4AC5665,
-    0xF4292244, 0x432AFF97, 0xAB9423A7, 0xFC93A039,
-    0x655B59C3, 0x8F0CCC92, 0xFFEFF47D, 0x85845DD1,
-    0x6FA87E4F, 0xFE2CE6E0, 0xA3014314, 0x4E0811A1,
-    0xF7537E82, 0xBD3AF235, 0x2AD7D2BB, 0xEB86D391
-};
+#define MD5_ROTL(w,x,g,s,t) w=x+_rotl((w+f+t+buf[g]),s);
+#define MD5_R0(w,x,y,z,g,s,t) f=(x&y)|(~x&z);MD5_ROTL(w,x,g,s,t)
+#define MD5_R1(w,x,y,z,g,s,t) f=(z&x)|(~z&y);MD5_ROTL(w,x,g,s,t)
+#define MD5_R2(w,x,y,z,g,s,t) f=x^y^z;MD5_ROTL(w,x,g,s,t)
+#define MD5_R3(w,x,y,z,g,s,t) f=y^(x|~z);MD5_ROTL(w,x,g,s,t)
 
 static void MD5_Transform(uint32_t* state, const void* buffer)
 {
+    const uint32_t* buf = (const uint32_t*)buffer;
     uint32_t a = state[0];
     uint32_t b = state[1];
     uint32_t c = state[2];
     uint32_t d = state[3];
-    uint32_t f, tmp;
+    uint32_t f;
 
-    for (int i = 0; i < 64; ++i)
-    {
-        if (i < 16)
-            f = (b & c) | (~b & d);
-        else if (i < 32)
-            f = (d & b) | (~d & c);
-        else if (i < 48)
-            f = b ^ c ^ d;
-        else
-            f = c ^ (b | ~d);
-
-        tmp = d;
-        d = c;
-        c = b;
-        b = b + _rotl((a + f + T[i] + ((const uint32_t*)buffer)[G[i]]), S[i]);
-        a = tmp;
-    }
+    MD5_R0(a, b, c, d, 0, 7, 0xD76AA478);
+    MD5_R0(d, a, b, c, 1, 12, 0xE8C7B756);
+    MD5_R0(c, d, a, b, 2, 17, 0x242070DB);
+    MD5_R0(b, c, d, a, 3, 22, 0xC1BDCEEE);
+    MD5_R0(a, b, c, d, 4, 7, 0xF57C0FAF);
+    MD5_R0(d, a, b, c, 5, 12, 0x4787C62A);
+    MD5_R0(c, d, a, b, 6, 17, 0xA8304613);
+    MD5_R0(b, c, d, a, 7, 22, 0xFD469501);
+    MD5_R0(a, b, c, d, 8, 7, 0x698098D8);
+    MD5_R0(d, a, b, c, 9, 12, 0x8B44F7AF);
+    MD5_R0(c, d, a, b, 10, 17, 0xFFFF5BB1);
+    MD5_R0(b, c, d, a, 11, 22, 0x895CD7BE);
+    MD5_R0(a, b, c, d, 12, 7, 0x6B901122);
+    MD5_R0(d, a, b, c, 13, 12, 0xFD987193);
+    MD5_R0(c, d, a, b, 14, 17, 0xA679438E);
+    MD5_R0(b, c, d, a, 15, 22, 0x49B40821);
+    MD5_R1(a, b, c, d, 1, 5, 0xF61E2562);
+    MD5_R1(d, a, b, c, 6, 9, 0xC040B340);
+    MD5_R1(c, d, a, b, 11, 14, 0x265E5A51);
+    MD5_R1(b, c, d, a, 0, 20, 0xE9B6C7AA);
+    MD5_R1(a, b, c, d, 5, 5, 0xD62F105D);
+    MD5_R1(d, a, b, c, 10, 9, 0x02441453);
+    MD5_R1(c, d, a, b, 15, 14, 0xD8A1E681);
+    MD5_R1(b, c, d, a, 4, 20, 0xE7D3FBC8);
+    MD5_R1(a, b, c, d, 9, 5, 0x21E1CDE6);
+    MD5_R1(d, a, b, c, 14, 9, 0xC33707D6);
+    MD5_R1(c, d, a, b, 3, 14, 0xF4D50D87);
+    MD5_R1(b, c, d, a, 8, 20, 0x455A14ED);
+    MD5_R1(a, b, c, d, 13, 5, 0xA9E3E905);
+    MD5_R1(d, a, b, c, 2, 9, 0xFCEFA3F8);
+    MD5_R1(c, d, a, b, 7, 14, 0x676F02D9);
+    MD5_R1(b, c, d, a, 12, 20, 0x8D2A4C8A);
+    MD5_R2(a, b, c, d, 5, 4, 0xFFFA3942);
+    MD5_R2(d, a, b, c, 8, 11, 0x8771F681);
+    MD5_R2(c, d, a, b, 11, 16, 0x6D9D6122);
+    MD5_R2(b, c, d, a, 14, 23, 0xFDE5380C);
+    MD5_R2(a, b, c, d, 1, 4, 0xA4BEEA44);
+    MD5_R2(d, a, b, c, 4, 11, 0x4BDECFA9);
+    MD5_R2(c, d, a, b, 7, 16, 0xF6BB4B60);
+    MD5_R2(b, c, d, a, 10, 23, 0xBEBFBC70);
+    MD5_R2(a, b, c, d, 13, 4, 0x289B7EC6);
+    MD5_R2(d, a, b, c, 0, 11, 0xEAA127FA);
+    MD5_R2(c, d, a, b, 3, 16, 0xD4EF3085);
+    MD5_R2(b, c, d, a, 6, 23, 0x04881D05);
+    MD5_R2(a, b, c, d, 9, 4, 0xD9D4D039);
+    MD5_R2(d, a, b, c, 12, 11, 0xE6DB99E5);
+    MD5_R2(c, d, a, b, 15, 16, 0x1FA27CF8);
+    MD5_R2(b, c, d, a, 2, 23, 0xC4AC5665);
+    MD5_R3(a, b, c, d, 0, 6, 0xF4292244);
+    MD5_R3(d, a, b, c, 7, 10, 0x432AFF97);
+    MD5_R3(c, d, a, b, 14, 15, 0xAB9423A7);
+    MD5_R3(b, c, d, a, 5, 21, 0xFC93A039);
+    MD5_R3(a, b, c, d, 12, 6, 0x655B59C3);
+    MD5_R3(d, a, b, c, 3, 10, 0x8F0CCC92);
+    MD5_R3(c, d, a, b, 10, 15, 0xFFEFF47D);
+    MD5_R3(b, c, d, a, 1, 21, 0x85845DD1);
+    MD5_R3(a, b, c, d, 8, 6, 0x6FA87E4F);
+    MD5_R3(d, a, b, c, 15, 10, 0xFE2CE6E0);
+    MD5_R3(c, d, a, b, 6, 15, 0xA3014314);
+    MD5_R3(b, c, d, a, 13, 21, 0x4E0811A1);
+    MD5_R3(a, b, c, d, 4, 6, 0xF7537E82);
+    MD5_R3(d, a, b, c, 11, 10, 0xBD3AF235);
+    MD5_R3(c, d, a, b, 2, 15, 0x2AD7D2BB);
+    MD5_R3(b, c, d, a, 9, 21, 0xEB86D391);
 
     state[0] += a;
     state[1] += b;
@@ -88,9 +109,8 @@ static void MD5_Transform(uint32_t* state, const void* buffer)
 
 static void MD5_Final_HMAC(uint32_t* state, uint8_t* buffer, uint64_t len)
 {
-    const uint64_t bitcount = (len + 64) * 8;
     buffer[len] = 0x80;
-    memcpy(buffer + 56, &bitcount, sizeof bitcount);
+    *(uint64_t*)(buffer + 56) = (len + 64) * 8;
     MD5_Transform(state, buffer);
 }
 
