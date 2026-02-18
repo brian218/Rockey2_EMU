@@ -23,6 +23,9 @@
 #include "Rockey2.h"
 #include "crypto.h"
 
+#define RY2_MAX_DONGLES 32
+#define RY2_BLOCK_COUNT 5
+
 static const HKEY RegRootKey = HKEY_CURRENT_USER;
 static const char* RegSubKey = "Software\\Rockey2\\Dongles";
 static const char* RegBlockName = "Block%d";
@@ -41,7 +44,7 @@ static void ReadRegDongleCountValue(void)
         DWORD regType = REG_DWORD;
         DWORD regSize = sizeof(DWORD);
         LSTATUS regStatus = RegQueryValueEx(regKey, RegValueName, NULL, &regType, (LPBYTE)&DongleCount, &regSize);
-        if (!(regStatus == ERROR_SUCCESS && regType == REG_DWORD && regSize == sizeof(DWORD)) || DongleCount < 0 || DongleCount > 100)
+        if (!(regStatus == ERROR_SUCCESS && regType == REG_DWORD && regSize == sizeof(DWORD)) || DongleCount < 0 || DongleCount > RY2_MAX_DONGLES)
         {
             DongleCount = 0;
             regType = REG_DWORD;
@@ -135,7 +138,7 @@ static void EraseDongleBlocks(int handle)
 {
     char buffer[512];
     memset(buffer, 0xFF, sizeof buffer);
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < RY2_BLOCK_COUNT; i++)
         WriteRegBlockValue(handle, i, buffer);
 }
 
@@ -240,7 +243,7 @@ int WINAPI RY2_Read(int handle, int block_index, char* buffer512)
 {
     if (handle < 0 || handle >= DongleCount)
         return RY2ERR_NO_SUCH_DEVICE;
-    if (block_index < 0 || block_index > 4)
+    if (block_index < 0 || block_index >= RY2_BLOCK_COUNT)
         return RY2ERR_WRONG_INDEX;
     if (!Dongles[handle].regKey || !Dongles[handle].mutex)
         return RY2ERR_NOT_OPENED_DEVICE;
@@ -255,7 +258,7 @@ int WINAPI RY2_Write(int handle, int block_index, char* buffer512)
 {
     if (handle < 0 || handle >= DongleCount)
         return RY2ERR_NO_SUCH_DEVICE;
-    if (block_index < 0 || block_index > 4)
+    if (block_index < 0 || block_index >= RY2_BLOCK_COUNT)
         return RY2ERR_WRONG_INDEX;
     if (!Dongles[handle].regKey || !Dongles[handle].mutex)
         return RY2ERR_NOT_OPENED_DEVICE;
@@ -274,6 +277,18 @@ int WINAPI RY2_GetVersion(int handle)
     if (!Dongles[handle].regKey || !Dongles[handle].mutex)
         return RY2ERR_NOT_OPENED_DEVICE;
     return Dongles[handle].version;
+}
+
+int WINAPI RY2_Transform(int handle, int len, BYTE* data)
+{
+    if (handle < 0 || handle >= DongleCount)
+        return RY2ERR_NO_SUCH_DEVICE;
+    if (!Dongles[handle].regKey || !Dongles[handle].mutex)
+        return RY2ERR_NOT_OPENED_DEVICE;
+    WaitForSingleObject(Dongles[handle].mutex, INFINITE);
+    int ret = Transform(Dongles[handle].uid, data, len);
+    ReleaseMutex(Dongles[handle].mutex);
+    return ret;
 }
 
 BOOL APIENTRY DllMain( HMODULE hModule,

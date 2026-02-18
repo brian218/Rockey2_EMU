@@ -7,3 +7,4 @@ EXPORTS
     RY2_Write
     RY2_GetVersion
     RY2_GenUID
+    RY2_Transform

@@ -27,6 +27,14 @@
 #define MD5_R2(w,x,y,z,g,s,t) f=x^y^z;MD5_ROTL(w,x,g,s,t)
 #define MD5_R3(w,x,y,z,g,s,t) f=y^(x|~z);MD5_ROTL(w,x,g,s,t)
 
+static const uint32_t MD5_InitState[16] =
+{
+    0xF3FA75B2, 0x4674956E, 0xDF65E04E, 0x6C779AAF,
+    0x942AAA39, 0xBB8F3AE9, 0xF10FD6A7, 0x177FEE2C,
+    0xF22427A0, 0xCA47F9BA, 0x4D203A65, 0x0E71FFFA,
+    0x9086D35D, 0x2EBA8A42, 0x60965967, 0x22B7AC16
+};
+
 static void MD5_Transform(uint32_t* state, const void* buffer)
 {
     const uint32_t* buf = (const uint32_t*)buffer;
@@ -109,15 +117,18 @@ static void MD5_Transform(uint32_t* state, const void* buffer)
 
 static void MD5_Final_HMAC(uint32_t* state, uint8_t* buffer, uint64_t len)
 {
+    const uint64_t bitcount = (len + 64) * 8;
     buffer[len] = 0x80;
-    *(uint64_t*)(buffer + 56) = (len + 64) * 8;
+    memcpy(buffer + 56, &bitcount, sizeof bitcount);
     MD5_Transform(state, buffer);
 }
 
 uint32_t GenUID(const char* seed)
 {
-    uint32_t state_ipad[16] = { 0xF3FA75B2, 0x4674956E, 0xDF65E04E, 0x6C779AAF };
-    uint32_t state_opad[4] = { 0x942AAA39, 0xBB8F3AE9, 0xF10FD6A7, 0x177FEE2C };
+    uint32_t state_ipad[16] = { 0 };
+    uint32_t state_opad[4] = { 0 };
+    memcpy(state_ipad, MD5_InitState, 16);
+    memcpy(state_opad, MD5_InitState + 4, 16);
 
     uint8_t buffer[64] = { 0 };
     strncpy(buffer, seed, sizeof buffer);
@@ -132,4 +143,52 @@ uint32_t GenUID(const char* seed)
     MD5_Final_HMAC(state_opad, (uint8_t*)state_ipad, 16);
 
     return state_opad[0];
+}
+
+int Transform(uint32_t uid, uint8_t* data, int len)
+{
+    if (len == 0 || len > 32)
+        return 0xB7;
+
+    uint64_t xor_key[4] = { 0 };
+    uint64_t data_temp[4] = { 0 };
+    memcpy(data_temp, data, len);
+
+    for (int i = 0; i < 2; i++)
+    {
+        uint32_t state_ipad[16] = { 0 };
+        uint32_t state_opad[4] = { 0 };
+        memcpy(state_ipad, MD5_InitState, 16);
+        memcpy(state_opad, MD5_InitState + 4, 16);
+        for (int j = 0; j < 4; j++)
+        {
+            state_ipad[j] ^= uid;
+            state_opad[j] ^= uid;
+        }
+        uint8_t buffer[64] = { 0 };
+        memcpy(buffer + (((uint8_t*)data_temp)[i * 16] % 23), data_temp, len);
+        MD5_Final_HMAC(state_ipad, buffer, 55);
+        MD5_Final_HMAC(state_opad, (uint8_t*)state_ipad, 16);
+        memcpy(xor_key + i * 2, state_opad, 16);
+    }
+
+    for (int i = 0; i < 4; i++)
+        data_temp[i] ^= xor_key[i];
+
+    memcpy(data, data_temp, len);
+    return 0;
+}
+
+void Transform_Factory(const uint8_t* challenge, uint8_t* response)
+{
+    uint32_t state_ipad[16] = { 0 };
+    uint32_t state_opad[4] = { 0 };
+    memcpy(state_ipad, MD5_InitState + 8, 16);
+    memcpy(state_opad, MD5_InitState + 12, 16);
+
+    uint8_t buffer[64] = { 0 };
+    memcpy(buffer, challenge, 55);
+    MD5_Final_HMAC(state_ipad, buffer, 55);
+    MD5_Final_HMAC(state_opad, (uint8_t*)state_ipad, 16);
+    memcpy(response, state_opad, 16);
 }

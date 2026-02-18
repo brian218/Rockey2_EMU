@@ -1,5 +1,6 @@
 LIBRARY NTDLL.dll
 EXPORTS
+    memcpy
     memset
     _snprintf
     strncpy

@@ -12,7 +12,7 @@ This library is distributed in the hope that it will be useful, but **WITHOUT AN
 
 This project aims to implement high-level emulation of Rockey2 dongle hardware. It is served as a Windows dynamic-link library (a `.dll` file) and is designed to assist developers in developing or debugging THEIR OWN applications that require a Rockey2 dongle for operation.
 
-This library works by reading configuration data from the Windows Registry to simulate the presence of one or more dongles. To ensure **stateful emulation**, any data the application writes to the dongle is also saved back to the Registry. This allows the emulated dongle to maintain its state across sessions, just like a physical device. This library supports the emulation of up to 100 individual dongles simultaneously (`Dongle00` to `Dongle99`).
+This library works by reading configuration data from the Windows Registry to simulate the presence of one or more dongles. To ensure **stateful emulation**, any data the application writes to the dongle is also saved back to the Registry. This allows the emulated dongle to maintain its state across sessions, just like a physical device. This library supports the emulation of up to 32 individual dongles simultaneously (`Dongle00` to `Dongle31`).
 
 ## Installation Guide
 
@@ -51,13 +51,13 @@ The `Sample.reg` file sets up the configuration in the Windows Registry for your
 The primary location for all settings is `HKEY_CURRENT_USER\Software\Rockey2\Dongles`.
 
 * **`"Count"`**: This value tells the library **how many dongles to emulate**.
-    * The valid range is `0` to `100`.
+    * The valid range is `0` to `32`.
     * The default value is `0`, which means no dongles are present.
     * If this value is found to be outside the valid range, the library will automatically reset it to `0`.
 
 ### Individual Dongle Configuration
 
-Each emulated dongle has its own section, from `Dongle00` up to `Dongle99`.
+Each emulated dongle has its own section, from `Dongle00` up to `Dongle31`.
 
 * **`"HID"`, `"UID"`, `"Version"`**: These are the **hardware identifiers** for the dongle. You should set these values to match the specific physical dongle your application is designed to work with.
 
@@ -73,7 +73,7 @@ This section details some of the key design philosophies and implementation tech
 
 ### Core Philosophy
 
-* **Faithful API Emulation:** The primary goal of this library is to be a drop-in replacement that is behaviorally identical to the original. This means the public-facing functions (`RY2_*`) intentionally replicate the exact signatures, return value styles, and even the quirks of the original library. For example, the function `RY2_GenUID` does not implement a complex hardware algorithm but rather mimics the observable results that are relevant for software emulation.
+* **Faithful API Emulation:** The primary goal of this library is to be a drop-in replacement that is behaviorally identical to the original. This means the public-facing functions (`RY2_*`) intentionally replicate the exact signatures, return value styles, and even the quirks of the original library.
 
 * **Zero-Dependency & CRT-Free Design:** This library is meticulously crafted to rely only on native Win32 APIs provided by essential system DLLs like `kernel32.dll` and `advapi32.dll`. It deliberately avoids any dependency on the Microsoft Visual C++ Runtime (CRT). This design choice is critical for two reasons:
     1.  **Maximum Portability:** It runs on nearly any Windows system out-of-the-box without requiring the installation of a specific C++ redistributable package.
@@ -89,7 +89,7 @@ This section details some of the key design philosophies and implementation tech
     3.  **Deliberate Function Choice:** The use of `_snprintf` over the more modern `sprintf_s` is intentional. `sprintf_s` introduces a dependency on a specific version of the C Runtime (CRT). By using the more fundamental `_snprintf` and enforcing safety manually, this library remains **CRT-free**, guaranteeing maximum compatibility and safe injection into any target process.
 
 * **Self-Healing Configuration:** The library is designed to be resilient against corrupted or invalid registry configurations through a three-level self-healing and fault-tolerance mechanism:
-    1.  **Global Dongle Count:** The main `Count` value is validated upon initialization. If it is missing, corrupted, or outside the valid range (0-100), the library automatically resets the value to a safe default of `0`.
+    1.  **Global Dongle Count:** The main `Count` value is validated upon initialization. If it is missing, corrupted, or outside the valid range (0-32), the library automatically resets the value to a safe default of `0`.
     2.  **Individual Dongle Properties:** For each individual dongle key (e.g., `Dongle00`), its hardware identifier values (`HID`, `UID`, `Version`, `Protection`) are also validated. If any of these values are found to be missing or of an incorrect data type, they are reset to `0`, and the corrected values are written back to the registry.
     3.  **Default State for Missing Block Data:** When a data block (`Block0` through `Block4`) is missing from the registry for a specified dongle, the function will not return an error. Instead, it will fill the application's buffer with 512 zeros, simulating an empty state, while not writing back to the registry since writing a full 512-byte block (or up to 2.5 KB for all 5 blocks) is a slow I/O operation.
 

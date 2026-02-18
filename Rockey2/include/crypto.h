@@ -22,3 +22,5 @@
 #include <stdint.h>
 
 uint32_t GenUID(const char* seed);
+int Transform(uint32_t uid, uint8_t* data, int len);
+void Transform_Factory(const uint8_t* challenge, uint8_t* response);
